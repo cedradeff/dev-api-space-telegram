@@ -13,6 +13,11 @@ pip install -r requirements
 ```
 4. Рекомендуется использовать venv для изоляции проекта.
 5. Перед запуском скриптов необходимо добавить в перменные окружения токен телаграм бота, id канала и ключ API NASA в файл .env
+```.env.example
+NASA_TOKEN=your_nasa_api_key
+TG_BOT_TOKEN=your_telegram_bot_token
+TG_CHANNEL_ID=ypur_telegram_channel_id
+```
 
 ### Примеры запуска
 
