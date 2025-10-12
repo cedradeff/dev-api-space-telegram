@@ -52,7 +52,7 @@ def publish_images(bot: Bot, delay_hours: int):
 
 def main():
     parser = argparse.ArgumentParser(description="Автоматическая публикация изображений в Telegram-канал.")
-    parser.add_argument("--delay", type=float, default=float(os.getenv("PUBLISH_DELAY_HOURS", DEFAULT_DELAY_HOURS)),
+    parser.add_argument("--delay", type=float, default=DEFAULT_DELAY_HOURS,
                         help="Задержка между публикациями (в часах). По умолчанию 4.")
     args = parser.parse_args()
     if not BOT_TOKEN or not CHANNEL_ID:

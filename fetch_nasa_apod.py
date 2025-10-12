@@ -28,7 +28,7 @@ def fetch_nasa_apod(url, save_dir="images"):
 
         with open(save_path, "wb") as file:
             file.write(img_response.content)
-            print(f"✅ Файл сохранён: {save_path}")
+            print(f"Файл сохранён: {save_path}")
 
 
 def main():
