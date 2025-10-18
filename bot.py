@@ -16,19 +16,35 @@ def get_image_list(images_dir):
     return files
 
 
-def publish_images(bot, channel_id, delay_hours, images_dir):
+def shuffle_images(images_dir):
+    """Получает и перемешивает список изображений из папки."""
     images = get_image_list(images_dir)
     if not images:
-        raise FileNotFoundError(
-            f"В папке '{images_dir}' не найдено изображений"
-        )
+        raise FileNotFoundError(f"В папке '{images_dir}' не найдено изображений")
+    random.shuffle(images)
+    return images
 
+
+def publish_single_image(bot, channel_id, img_path):
+    """Отправляет одно изображение через бота."""
+    send_photo_via_bot(bot, channel_id, img_path)
+    print(f"Отправлено: {os.path.basename(img_path)}")
+
+
+def wait_for_next_publication(delay_hours):
+    """Задержка перед следующей публикацией."""
+    print(f"Следующая публикация через {delay_hours} часов...")
+    time.sleep(delay_hours * 3600)
+
+
+def publish_images(bot, channel_id, delay_hours, images_dir):
+    """Основной цикл публикации изображений."""
+    images = shuffle_images(images_dir)
     published = []
-    random.shuggle(images)
 
     while True:
         if len(published) == len(images):
-            print("Все фото опубликованы. Цикл начинается заново")
+            print("Все фото опубликованы. Цикл начинается заново.")
             published.clear()
             random.shuffle(images)
 
@@ -36,12 +52,9 @@ def publish_images(bot, channel_id, delay_hours, images_dir):
             if img_path in published:
                 continue
 
-            send_photo_via_bot(bot, channel_id, img_path)
+            publish_single_image(bot, channel_id, img_path)
             published.append(img_path)
-            print(f"Отправлено: {os.path.basename(img_path)}")
-
-            print(f"Следующая публикация через {delay_hours} часов...")
-            time.sleep(delay_hours * 3600)
+            wait_for_next_publication(delay_hours)
 
 
 def main():
