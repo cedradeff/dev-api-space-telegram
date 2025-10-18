@@ -4,53 +4,54 @@ import random
 import argparse
 import sys
 from telegram import Bot
+from file_helpers import send_photo_via_bot
 
 
-load_dotenv()
-BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
-CHANNEL_ID = os.getenv("TG_CHANNEL_ID")
-IMAGES_DIR = "images"
-
-
-def get_random_image():
+def get_random_image(images_dir):
     supported_ext = (".jpg", ".jpeg", ".png", ".gif")
-    images = [os.path.join(IMAGES_DIR, f) for f in os.listdir(IMAGES_DIR) if f.lower().endswith(supported_ext)]
+    images = [
+        os.path.join(images_dir, f)
+        for f in os.listdir(images_dir)
+        if f.lower().endswith(supported_ext)]
     if not images:
-        print("В папке 'images' нет изображений.")
+        print(f"В папке {images_dir} нет изображений.")
         sys.exit(1)
     return random.choice(images)
 
 
-def send_photo(photo_path, caption=None):
+def send_photo(bot_token, channel_id, photo_path, caption=None):
     """Отправляет фото в Telegram-канал."""
-    bot_token = os.getenv("TG_BOT_TOKEN")
-    channel_id = os.getenv("TG_CHANNEL_ID")
 
     if not bot_token or not channel_id:
-        print("Ошибка: не заданы TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL_ID.")
-        sys.exit(1)
-
+        raise ValueError("Не заданы TG_BOT_TOKEN и TG_CHANNEL_ID")
     bot = Bot(token=bot_token)
-
-    try:
-        with open(photo_path, "rb") as photo:
-            print(f"Отправка фото {photo_path} в {channel_id} ...")
-            bot.send_photo(chat_id=channel_id, photo=photo, caption=caption)
-        print("Фото успешно отправлено")
-    except Exception as e:
-        print(f"Ошибка при отправке: {e}")
+    send_photo_via_bot(bot, channel_id, photo_path, caption)
 
 
 def main():
+    load_dotenv()
+    bot_token = os.environ["TG_BOT_TOKEN"]
+    channel_id = os.environ["TG_CHANNEL_ID"]
     parser = argparse.ArgumentParser(
         description="Отправка одной фотографии в Telegram-канал."
     )
     parser.add_argument(
         "--photo",
         type=str,
-        help="Путь к фото (если не указано — выбирается случайное из папки images/)."
+        help="Путь к изображениюы)."
+    )
+    parser.add_argument(
+        "--images-dir",
+        type=str,
+        help="Путь к папке с изображениями (по умолчанию — из .env или 'images')."
     )
     args = parser.parse_args()
+
+    images_dir = (
+        args.images_dir
+        or os.environ("IMAGES_DIR")
+        or "images"
+    )
 
     # Определяем, какое фото использовать
     if args.photo:
@@ -59,11 +60,15 @@ def main():
             sys.exit(1)
         photo_path = args.photo
     else:
-        photo_path = get_random_image()
+        photo_path = get_random_image(images_dir)
         print(f"Фото не указано, выбрано случайное: {photo_path}")
 
     # Отправляем
-    send_photo(photo_path)
+    try:
+        send_photo(bot_token, channel_id, photo_path)
+    except ValueError as e:
+        print(f"Ошибка при отправке фото: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -4,29 +4,27 @@ from telegram import Bot
 import time
 import random
 import argparse
+from file_helpers import send_photo_via_bot
 
 
-load_dotenv()
-BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
-CHANNEL_ID = os.getenv("TG_CHANNEL_ID")
-bot = Bot(token=BOT_TOKEN)
-DEFAULT_DELAY_HOURS = 4
-
-
-def get_image_list():
-    IMAGES_DIR = "images"
+def get_image_list(images_dir):
     supported_ext = (".jpg", ".jpeg", ".png", ".gif")
-    files = [os.path.join(IMAGES_DIR, f) for f in os.listdir(IMAGES_DIR) if f.lower().endswith(supported_ext)]
+    files = [
+        os.path.join(images_dir, f)
+        for f in os.listdir(images_dir)
+        if f.lower().endswith(supported_ext)]
     return files
 
 
-def publish_images(bot: Bot, delay_hours: int):
-    images = get_image_list()
+def publish_images(bot, channel_id, delay_hours, images_dir):
+    images = get_image_list(images_dir)
     if not images:
-        print("В папке 'images' нет изображений.")
-        return
+        raise FileNotFoundError(
+            f"В папке '{images_dir}' не найдено изображений"
+        )
 
     published = []
+    random.shuggle(images)
 
     while True:
         if len(published) == len(images):
@@ -38,29 +36,51 @@ def publish_images(bot: Bot, delay_hours: int):
             if img_path in published:
                 continue
 
-            try:
-                print(f"Отправка: {img_path}")
-                with open(img_path, "rb") as photo:
-                    bot.send_photo(chat_id=CHANNEL_ID, photo=photo)
-                published.append(img_path)
-            except Exception as e:
-                print(f"Ошибка при отправке {img_path}: {e}")
+            send_photo_via_bot(bot, channel_id, img_path)
+            published.append(img_path)
+            print(f"Отправлено: {os.path.basename(img_path)}")
 
             print(f"Следующая публикация через {delay_hours} часов...")
             time.sleep(delay_hours * 3600)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Автоматическая публикация изображений в Telegram-канал.")
-    parser.add_argument("--delay", type=float, default=DEFAULT_DELAY_HOURS,
-                        help="Задержка между публикациями (в часах). По умолчанию 4.")
+    load_dotenv()
+    bot_token = os.environ["TG_BOT_TOKEN"]
+    channel_id = os.environ["TG_CHANNEL_ID"]
+    bot = Bot(token=bot_token)
+    DEFAULT_DELAY_HOURS = 4
+
+    parser = argparse.ArgumentParser(
+        description="Автоматическая публикация изображений в Telegram-канал."
+    )
+    parser.add_argument(
+        "--delay", type=float,
+        default=DEFAULT_DELAY_HOURS,
+        help="Задержка между публикациями (в часах). По умолчанию 4."
+    )
+    parser.add_argument(
+        "--images-dir",
+        type=str,
+        help="Путь к папке с изображениями (по умолчанию — из .env или 'images')"
+    )
     args = parser.parse_args()
-    if not BOT_TOKEN or not CHANNEL_ID:
+
+    images_dir = (
+        args.images_dir
+        or os.environ.get("IMAGES_DIR")
+        or "images"
+    )
+
+    if not bot_token or not channel_id:
         print("Ошибка: не задан TG_BOT_TOKEN или TG_CHANNEL_ID.")
         return
-    bot = Bot(token=BOT_TOKEN)
-    print(f"Старт публикаций каждые {args.delay} часов в канал {CHANNEL_ID}")
-    publish_images(bot, args.delay)
+    bot = Bot(token=bot_token)
+    print(f"Старт публикаций каждые {args.delay} часов в канал {channel_id}")
+    try:
+        publish_images(bot, channel_id, args.delay, images_dir)
+    except FileNotFoundError as e:
+        print(f"Ошибка выбора файла {e}")
 
 
 if __name__ == "__main__":
