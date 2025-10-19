@@ -10,6 +10,12 @@ def get_file_extension(url):
     return ext if ext else ".jpg"
 
 
+def save_image_to_disk(image_content, save_path):
+    with open(save_path, "wb") as file:
+        file.write(image_content)
+    print(f"Файл сохранен {save_path}")
+
+
 def download_images(img_links, save_dir, filename_prefix):
     for img_number, image_url in enumerate(img_links, start=1):
         ext = get_file_extension(image_url)
@@ -17,10 +23,7 @@ def download_images(img_links, save_dir, filename_prefix):
         save_path = os.path.join(save_dir, filename)
         img_response = requests.get(image_url)
         img_response.raise_for_status()
-
-        with open(save_path, "wb") as file:
-            file.write(img_response.content)
-            print(f'Файл сохранен {save_path}')
+        save_image_to_disk(img_response.content, save_path)
 
 
 def send_photo_via_bot(bot, chat_id, photo_path, caption=None):

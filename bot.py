@@ -5,6 +5,7 @@ import time
 import random
 import argparse
 from file_helpers import send_photo_via_bot
+import requests
 
 
 def get_image_list(images_dir):
@@ -16,8 +17,7 @@ def get_image_list(images_dir):
     return files
 
 
-def shuffle_images(images_dir):
-    """Получает и перемешивает список изображений из папки."""
+def get_shuffled_images(images_dir):
     images = get_image_list(images_dir)
     if not images:
         raise FileNotFoundError(f"В папке '{images_dir}' не найдено изображений")
@@ -25,36 +25,30 @@ def shuffle_images(images_dir):
     return images
 
 
-def publish_single_image(bot, channel_id, img_path):
-    """Отправляет одно изображение через бота."""
-    send_photo_via_bot(bot, channel_id, img_path)
-    print(f"Отправлено: {os.path.basename(img_path)}")
-
-
-def wait_for_next_publication(delay_hours):
-    """Задержка перед следующей публикацией."""
-    print(f"Следующая публикация через {delay_hours} часов...")
-    time.sleep(delay_hours * 3600)
-
-
-def publish_images(bot, channel_id, delay_hours, images_dir):
-    """Основной цикл публикации изображений."""
-    images = shuffle_images(images_dir)
-    published = []
-
+def publish_images(bot, channel_id, delay_hours, images_dir, retry_delay=30):
     while True:
-        if len(published) == len(images):
-            print("Все фото опубликованы. Цикл начинается заново.")
-            published.clear()
-            random.shuffle(images)
+        images = get_shuffled_images(images_dir)
+        print("Новый цикл публикации")
 
         for img_path in images:
-            if img_path in published:
-                continue
+            while True:
+                try:
+                    send_photo_via_bot(bot, channel_id, img_path)
+                    print(f"Отправлено: {os.path.basename(img_path)}")
+                    break
 
-            publish_single_image(bot, channel_id, img_path)
-            published.append(img_path)
-            wait_for_next_publication(delay_hours)
+                except (requests.exceptions.RequestException, ConnectionError) as e:
+                    print(f"Ошибка соединения: {e}")
+                    print(f"Повторная попытка через {retry_delay} секунд")
+                    time.sleep(retry_delay)
+                    continue
+
+                except Exception as e:
+                    print(f"Неожиданная ошибка при отправке {img_path}: {e}")
+                    break
+
+            print(f"Следующая публикация через {delay_hours} часов")
+            time.sleep(delay_hours * 3600)
 
 
 def main():
@@ -62,14 +56,14 @@ def main():
     bot_token = os.environ["TG_BOT_TOKEN"]
     channel_id = os.environ["TG_CHANNEL_ID"]
     bot = Bot(token=bot_token)
-    DEFAULT_DELAY_HOURS = 4
+    default_delay_hours = 4
 
     parser = argparse.ArgumentParser(
         description="Автоматическая публикация изображений в Telegram-канал."
     )
     parser.add_argument(
         "--delay", type=float,
-        default=DEFAULT_DELAY_HOURS,
+        default=default_delay_hours,
         help="Задержка между публикациями (в часах). По умолчанию 4."
     )
     parser.add_argument(
@@ -88,7 +82,6 @@ def main():
     if not bot_token or not channel_id:
         print("Ошибка: не задан TG_BOT_TOKEN или TG_CHANNEL_ID.")
         return
-    bot = Bot(token=bot_token)
     print(f"Старт публикаций каждые {args.delay} часов в канал {channel_id}")
     try:
         publish_images(bot, channel_id, args.delay, images_dir)
