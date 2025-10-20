@@ -38,7 +38,7 @@ def main():
     parser.add_argument(
         "--photo",
         type=str,
-        help="Путь к изображениюы)."
+        help="Путь к изображению"
     )
     parser.add_argument(
         "--images-dir",

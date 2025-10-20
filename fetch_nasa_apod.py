@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from file_helpers import download_images
+from file_helpers import download_image
 import argparse
 from api_helpers import make_nasa_request
 
@@ -20,7 +20,8 @@ def fetch_nasa_apod(nasa_token, url, save_dir, count):
     if not img_links:
         return
 
-    download_images(img_links, save_dir, filename_prefix="nasa_apod")
+    for img_number, image_url in enumerate(img_links, start=1):
+        download_image(image_url, save_dir, filename_prefix="nasa_apod", img_number=img_number)
 
 
 def main():

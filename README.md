@@ -12,11 +12,12 @@ git clone https://github.com/cedradeff/dev-api-space-telegram
 pip install -r requirements.txt
 ```
 4. Рекомендуется использовать venv для изоляции проекта.
-5. Перед запуском скриптов необходимо добавить в переменные окружения токен телаграм бота, id канала и ключ API NASA в файл .env
+5. Перед запуском скриптов необходимо добавить в переменные окружения токен телаграм бота, id канала и ключ API NASA в файл .env. Опционально директорию с изображениями (по умолчанию "images" в папке со скриптами)
 ```.env.example
 NASA_TOKEN=your_nasa_api_key
 TG_BOT_TOKEN=your_telegram_bot_token
 TG_CHANNEL_ID=ypur_telegram_channel_id
+IMAGES_DIR=images
 ```
 
 ### Примеры запуска

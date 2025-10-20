@@ -25,13 +25,13 @@ def get_shuffled_images(images_dir):
     return images
 
 
-def publish_images(bot, channel_id, delay_hours, images_dir, retry_delay=30):
+def publish_images(bot, channel_id, delay_hours, images_dir, retry_delay=30, max_retries=5):
     while True:
         images = get_shuffled_images(images_dir)
         print("Новый цикл публикации")
 
         for img_path in images:
-            while True:
+            for attempt in range(1, max_retries + 1):
                 try:
                     send_photo_via_bot(bot, channel_id, img_path)
                     print(f"Отправлено: {os.path.basename(img_path)}")
@@ -39,13 +39,16 @@ def publish_images(bot, channel_id, delay_hours, images_dir, retry_delay=30):
 
                 except (requests.exceptions.RequestException, ConnectionError) as e:
                     print(f"Ошибка соединения: {e}")
-                    print(f"Повторная попытка через {retry_delay} секунд")
-                    time.sleep(retry_delay)
+                    if attempt < max_retries:
+                        print(f"Попытка {attempt}/{max_retries}. Повтор через {retry_delay} секунд...")
+                        time.sleep(retry_delay)
+                    else:
+                        print(f"Не удалось отправить {os.path.basename(img_path)} после {max_retries} попыток. Пропуск.")
                     continue
 
                 except Exception as e:
                     print(f"Неожиданная ошибка при отправке {img_path}: {e}")
-                    break
+                    break  # выходим при других ошибках
 
             print(f"Следующая публикация через {delay_hours} часов")
             time.sleep(delay_hours * 3600)

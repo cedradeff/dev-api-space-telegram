@@ -1,6 +1,6 @@
 import os
 import argparse
-from file_helpers import download_images
+from file_helpers import download_image
 from api_helpers import make_spacex_request
 
 
@@ -17,7 +17,8 @@ def fetch_spacex_launch(launch_id, save_dir):
     img_links = extract_spacex_image_links(parsed_response)
     if not img_links:
         return
-    download_images(img_links, save_dir, filename_prefix="spacex_apod")
+    for img_number, image_url in enumerate(img_links, start=1):
+        download_image(image_url, save_dir, filename_prefix="spacex_apod", img_number=img_number)
 
 
 def main():
